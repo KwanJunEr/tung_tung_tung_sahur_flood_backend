@@ -1,6 +1,7 @@
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.memory import ConversationBufferMemory
+from langchain.prompts import PromptTemplate
 from langchain.chains import ConversationChain
 from dotenv import load_dotenv
 
@@ -15,13 +16,27 @@ llm = ChatGoogleGenerativeAI(
     )
 
 
+#Custom Prompt Tempalte
+custom_prompt = PromptTemplate(
+    input_variables=["history", "input"],
+    template="""
+You are a helpful, multilingual AI assistant. You can understand and respond fluently in any language including Malay, English, Chinese, etc.
+
+Chat History:
+{history}
+
+User: {input}
+AI:"""
+)
+
 # Memory for chat (stores past conversation)
 memory = ConversationBufferMemory()
 
 # Conversation chain with memory
 conversation = ConversationChain(
     llm=llm,
-    memory=memory
+    memory=memory,
+    prompt=custom_prompt
 )
 
 def chat_with_memory(user_input: str) -> str:
