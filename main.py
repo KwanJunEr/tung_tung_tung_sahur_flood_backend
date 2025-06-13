@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from langchain_helper import chat_with_memory  # Your custom function
+from langchain_helper import chat_with_memory
+import numpy as np
+import tensorflow as tf
+import joblib  
 
 app = FastAPI()
 
@@ -14,6 +17,12 @@ app.add_middleware(
     allow_headers=["*"],   # Allow all headers
 )
 
+#Load Model and Scaler
+model = tf.keras.models.load_model('flood_model.h5', compile=False)
+scaler = joblib.load('./scaler.pkl')
+
+class FloodFeatures(BaseModel):
+    features: list  # expecting a list of 20 numeric values
 # ✅ Request Body model
 class ChatRequest(BaseModel):
     user_input: str
@@ -25,3 +34,11 @@ async def chat_endpoint(request: ChatRequest):
     user_text = request.user_input
     response = chat_with_memory(user_text)
     return {"response": response}
+
+
+@app.post("/predict/")
+def predict(data: FloodFeatures):
+    X = np.array(data.features).reshape(1, -1)
+    X_scaled = scaler.transform(X)
+    prediction = model.predict(X_scaled)
+    return {"FloodProbability": float(prediction[0][0])}
